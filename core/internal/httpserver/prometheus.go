@@ -83,6 +83,7 @@ func DeleteTopicMetrics(cluster, topic string) {
 		"topic":   topic,
 	}
 
+	partitionStatusGauge.DeletePartialMatch(labels)
 	topicPartitionOffsetGauge.DeletePartialMatch(labels)
 
 	// If a topic is deleted there cannot be any consumers, so delete all consumer metrics too

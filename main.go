@@ -43,6 +43,7 @@ import (
 	"github.com/spf13/viper"
 	_ "go.uber.org/automaxprocs"
 
+	"github.com/IBM/sarama"
 	"github.com/linkedin/Burrow/core"
 )
 
@@ -67,9 +68,24 @@ func handleExit() {
 func main() {
 	// This makes sure that we panic and run defers correctly
 	defer handleExit()
+	println("All supported Kafka versions:")
+	vXYcache := strings.Join(strings.SplitN(sarama.MinVersion.String(), ".", 3)[:2], ".")
+	var versions []string
+	for _, v := range sarama.SupportedVersions {
+		vXY := strings.Join(strings.SplitN(v.String(), ".", 3)[:2], ".")
+		if vXY != vXYcache {
+			println(strings.Join(versions, " -> "))
+			versions = []string{v.String()}
+			vXYcache = vXY
+		} else {
+			versions = append(versions, v.String())
+		}
+	}
+	println(sarama.MaxVersion.String())
+	pwd, _ := os.Getwd()
 
 	// The only command line arg is the config file
-	configPath := flag.String("config-dir", ".", "Directory that contains the configuration file")
+	configPath := flag.String("config-dir", pwd, "Directory that contains the configuration file")
 	flag.Parse()
 
 	// Load the configuration from the file
