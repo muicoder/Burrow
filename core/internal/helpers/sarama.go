@@ -73,7 +73,7 @@ func GetSaramaConfigFromClientProfile(profileName string) *sarama.Config {
 	}
 
 	viper.SetDefault(configRoot+".client-id", "burrow-lagchecker")
-	viper.SetDefault(configRoot+".kafka-version", "2.8.0")
+	viper.SetDefault(configRoot+".kafka-version", sarama.V2_8_2_0)
 
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.ClientID = viper.GetString(configRoot + ".client-id")
@@ -129,6 +129,9 @@ func GetSaramaConfigFromClientProfile(profileName string) *sarama.Config {
 			saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
 				return &XDGSCRAMClient{HashGeneratorFcn: SHA512}
 			}
+		} else if mechanism == "PLAIN" {
+			saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+			viper.Set("sasl."+saslName+".handshake-first", true)
 		}
 		saramaConfig.Net.SASL.Handshake = viper.GetBool("sasl." + saslName + ".handshake-first")
 		saramaConfig.Net.SASL.User = viper.GetString("sasl." + saslName + ".username")

@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -26,6 +27,10 @@ import (
 // of a protocol.ConsumerGroupStatus and create a message to use in a notification.
 func executeTemplate(tmpl *template.Template, extras map[string]string, status *protocol.ConsumerGroupStatus, eventID string, startTime time.Time) (*bytes.Buffer, error) {
 	bytesToSend := new(bytes.Buffer)
+	hn, _ := os.Hostname()
+	if strings.Contains(hn, "-") {
+		hn = strings.SplitAfterN(hn, "-", 2)[1]
+	}
 	err := tmpl.Execute(bytesToSend, struct {
 		Cluster string
 		Group   string
@@ -34,7 +39,7 @@ func executeTemplate(tmpl *template.Template, extras map[string]string, status *
 		Extras  map[string]string
 		Result  protocol.ConsumerGroupStatus
 	}{
-		Cluster: status.Cluster,
+		Cluster: status.Cluster + "\n" + time.Now().Local().Format("01-02 15:04:05") + "👈㏒👉" + hn,
 		Group:   status.Group,
 		ID:      eventID,
 		Start:   startTime,
@@ -91,28 +96,10 @@ func classifyTopicsByStatus(partitions []*protocol.PartitionStatus) map[string][
 // Template Helper - Return a map of partition counts
 // keys are warn, stop, stall, rewind, unknown
 func templateCountPartitions(partitions []*protocol.PartitionStatus) map[string]int {
-	rv := map[string]int{
-		"warn":    0,
-		"stop":    0,
-		"stall":   0,
-		"rewind":  0,
-		"unknown": 0,
-	}
+	rv := make(map[string]int, len(partitions))
 
 	for _, partition := range partitions {
-		switch partition.Status {
-		case protocol.StatusOK:
-		case protocol.StatusWarning:
-			rv["warn"]++
-		case protocol.StatusStop:
-			rv["stop"]++
-		case protocol.StatusStall:
-			rv["stall"]++
-		case protocol.StatusRewind:
-			rv["rewind"]++
-		default:
-			rv["unknown"]++
-		}
+		rv[partition.Status.String()]++
 	}
 
 	return rv
@@ -163,5 +150,9 @@ func maxLagHelper(a *protocol.PartitionStatus) uint64 {
 }
 
 func formatTimestamp(timestamp int64, formatString string) string {
-	return time.Unix(0, timestamp*int64(time.Millisecond)).Format(formatString)
+	if timestamp > 0 {
+		return time.Unix(0, timestamp*int64(time.Millisecond)).Format(formatString)
+	} else {
+		return time.Now().Format(formatString)
+	}
 }
