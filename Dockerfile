@@ -1,24 +1,12 @@
-# stage 1: builder
-FROM golang:1.25.1-alpine as builder
-
-ENV BURROW_SRC /usr/src/Burrow/
-
-RUN apk add --no-cache git curl
-WORKDIR $BURROW_SRC
-
-COPY go.mod go.sum ./
-
-RUN go mod download
-
-COPY . $BURROW_SRC
-RUN go build -o /tmp/burrow .
-
-# stage 2: runner
-FROM alpine:3.22
-
-LABEL maintainer="LinkedIn Burrow https://github.com/linkedin/Burrow"
-
-COPY --from=builder /tmp/burrow /app/
-COPY docker-config/burrow.toml /etc/burrow/
-
-CMD ["/app/burrow", "--config-dir", "/etc/burrow"]
+FROM golang:alpine AS zetcd
+RUN go install -trimpath -ldflags '-s -w -extldflags "-static"' github.com/etcd-io/zetcd/cmd/zkboom@latest github.com/etcd-io/zetcd/cmd/zkctl@latest
+FROM quay.io/coreos/etcd:v3.6.7 AS etcd
+FROM muicoder/burrow:latest AS cached
+ARG TARGETARCH
+COPY --from=etcd /usr/local/bin /usr/local/bin
+COPY --from=zetcd /go/bin /usr/local/bin
+COPY .git/$TARGETARCH/* /usr/local/bin/
+# kcat on libcrypto1.1+libssl1.1
+FROM alpine:3.23
+RUN apk add --no-cache curl jq wget tzdata libcurl lz4-libs zstd-libs ca-certificates openssl
+COPY --from=cached /usr/local/bin /usr/local/bin

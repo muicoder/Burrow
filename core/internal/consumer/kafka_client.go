@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"os"
 	"regexp"
 	"sync"
 	"time"
@@ -151,8 +152,17 @@ func (module *KafkaClient) Start() error {
 	// Connect Kafka client
 	client, err := sarama.NewClient(module.servers, module.saramaConfig)
 	if err != nil {
-		module.Log.Error("failed to start client", zap.Error(err))
-		return err
+		module.Log.Error("failed to start client[consumer]version:"+module.saramaConfig.Version.String(), zap.Error(err))
+	}
+	if os.Getenv("CLUSTERS_VERSION") == "" {
+		vers := len(sarama.SupportedVersions)
+		for index := range vers {
+			module.saramaConfig.Version = sarama.SupportedVersions[vers-index-1]
+			if client, err = sarama.NewClient(module.servers, module.saramaConfig); err == nil {
+				module.Log.Info("try using client[consumer]version:" + module.saramaConfig.Version.String())
+				break
+			}
+		}
 	}
 
 	// Start the consumers

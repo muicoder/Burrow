@@ -3,7 +3,7 @@ module github.com/linkedin/Burrow
 go 1.24.0
 
 require (
-	github.com/IBM/sarama v1.46.1
+	github.com/IBM/sarama latest
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/julienschmidt/httprouter v1.3.0
@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/xdg/scram v1.0.5
 	go.uber.org/automaxprocs v1.6.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap latest
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
