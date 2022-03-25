@@ -88,9 +88,12 @@ func (module *KafkaCluster) Start() error {
 
 	// Connect Kafka client
 	client, err := sarama.NewClient(module.servers, module.saramaConfig)
-	if err != nil {
-		module.Log.Error("failed to start client", zap.Error(err))
-		return err
+	for index, _ := range sarama.SupportedVersions {
+		module.saramaConfig.Version = sarama.SupportedVersions[len(sarama.SupportedVersions)-index-1]
+		if client, err = sarama.NewClient(module.servers, module.saramaConfig); err == nil {
+			module.Log.Info("KafkaVersion " + module.saramaConfig.Version.String())
+			break
+		}
 	}
 
 	// Fire off the offset requests once, before we start the ticker, to make sure we start with good data for consumers
